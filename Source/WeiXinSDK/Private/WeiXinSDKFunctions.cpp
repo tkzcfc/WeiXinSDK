@@ -73,10 +73,6 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 		UE_LOG(LogAndroid, Warning, TEXT("ERROR Could note get Java ENV\n"));
 	}
 #endif
-	FGraphEventRef EnterBackgroundTask = FFunctionGraphTask::CreateAndDispatchWhenReady([&]()
-	{
-		UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(TEXT("66666666"));
-	}, TStatId(), NULL, ENamedThreads::GameThread);
 }
 
 void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(int index, const FString& url, bool isShareToTimeline)
