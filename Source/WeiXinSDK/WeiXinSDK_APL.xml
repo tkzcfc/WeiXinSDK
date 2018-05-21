@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--GearVR plugin additions-->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- init section is always evaluated once per architecture -->
+  <trace enable="true"/>
+  <init>
+    <log text="WeiXinSDK init"/>    
+  </init>
+
+  <androidManifestUpdates>
+    <addElements tag="application">
+    <activity android:name="com.ChengduWonderVision.BlockMaster.wxapi.WXEntryActivity"
+    android:launchMode="singleTop"
+    android:exported="true"/> 
+    </addElements>
+
+  <uses-permission android:name="android.permission.INTERNET"/>
+
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+
+  <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    
+  </androidManifestUpdates>
+
+  <!-- optional additions to proguard -->
+  <proguardAdditions>
+    <insert>
+  <!-- -keepattributes Signature -->
+  <!-- -dontskipnonpubliclibraryclassmembers -->
+  -libraryjars libs/libammsdk.jar
+
+  <!-- -keep class com.tencent.mm.opensdk.** {
+    *;
+  }
+
+  -keep class com.tencent.wxop.** {
+    *;
+  }
+
+  -keep class com.tencent.mm.sdk.** {
+    *;
+  } -->
+  </insert>
+  </proguardAdditions>
+
+  <resourceCopies>
+    <!-- Copy the generated resource file to be packaged -->
+    <copyFile src="$S(PluginDir)/../../lib/Android/libammsdk.jar" dst="$S(BuildDir)/libs/libammsdk.jar" />
+    <copyFile src="$S(PluginDir)/../../Source/ThirdParty/Java/wxapi/WXEntryActivity.java" dst="$S(BuildDir)/src/com/ChengduWonderVision/BlockMaster/wxapi/WXEntryActivity.java" />
+    <copyFile src="$S(PluginDir)/../../Source/ThirdParty/Java/wx_share.png" dst="$S(BuildDir)/res/drawable/wx_share.png" />
+  </resourceCopies>
+
+  
+  <!-- optional additions to the GameActivity imports in GameActivity.java -->
+  <gameActivityImportAdditions>
+  <insert>
+  
+  // WeiXin
+  import com.tencent.mm.sdk.openapi.IWXAPI;
+  import com.tencent.mm.sdk.openapi.WXAPIFactory;
+  import com.tencent.mm.sdk.openapi.IWXAPIEventHandler;
+  import com.tencent.mm.sdk.openapi.BaseReq;  
+  import com.tencent.mm.sdk.openapi.BaseResp;
+  import com.tencent.mm.sdk.openapi.GetMessageFromWX;
+  import com.tencent.mm.sdk.openapi.WXAppExtendObject;
+  import com.tencent.mm.sdk.openapi.WXImageObject;
+  import com.tencent.mm.sdk.openapi.WXMediaMessage;
+  import com.tencent.mm.sdk.openapi.WXMusicObject;
+  import com.tencent.mm.sdk.openapi.WXTextObject;
+  import com.tencent.mm.sdk.openapi.WXVideoObject;
+  import com.tencent.mm.sdk.openapi.WXWebpageObject;
+  import com.tencent.mm.sdk.openapi.SendMessageToWX;
+
+  import android.graphics.Bitmap;
+  import android.graphics.BitmapFactory;
+  import android.graphics.Bitmap.CompressFormat; 
+  import java.io.ByteArrayOutputStream;
+  import android.widget.Toast;
+
+  import com.ChengduWonderVision.BlockMaster.R;
+  </insert>
+  </gameActivityImportAdditions>
+  
+
+  <!-- optional additions to the GameActivity class in GameActivity.java -->
+  <gameActivityClassAdditions>
+  <insert>
+    <![CDATA[
+
+  public native void nativeOnWXShareResult(String result);
+  
+  // 微信APPID
+  private static final String WECHAT_APP_ID = "";
+  
+  private IWXAPI m_wxApi;
+  
+  private Context m_context_WeChat;
+
+  private static final int THUMB_SIZE = 150;
+
+  public static byte[] WX_bmpToByteArray(final Bitmap bmp, final boolean needRecycle) {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    bmp.compress(CompressFormat.PNG, 100, output);
+    if (needRecycle) {
+      bmp.recycle();
+    }
+    
+    byte[] result = output.toByteArray();
+    try {
+      output.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    
+    return result;
+  }
+
+  public IWXAPI getWXAPI(){
+    return m_wxApi;
+  }
+
+  private String WX_buildTransaction(final String type) {
+    return (type == null) ? String.valueOf(System.currentTimeMillis()) : type + System.currentTimeMillis();
+  }
+
+  /**
+     * 分享到微信
+     *
+     * @param text              文字内容
+     * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
+     */
+   
+   public void AndroidThunkJava_WXSDK_sendReqText(String text, boolean isShareToTimeline) {
+        // 初始化一个WXTextObject对象
+        WXTextObject textObj = new WXTextObject();
+        textObj.text = text;
+
+        // 用WXTextObject对象初始化一个WXMediaMessage对象
+        WXMediaMessage msg = new WXMediaMessage();
+        msg.mediaObject = textObj;
+        // 发送文本类型的消息时，title字段不起作用
+        // msg.title = "Will be ignored";
+        msg.description = text;
+
+        // 构造一个Req
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = WX_buildTransaction("text"); // transaction字段用于唯一标识一个请求
+        req.message = msg;
+    
+    //要分享给好友还是分享到朋友圈
+        req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+
+        // 调用api接口发送数据到微信
+        m_wxApi.sendReq(req);
+    }
+  
+  /**
+     * 发送图片到微信
+     *
+     * @param index             索引。1：表示手机本地图片；2：表示网络图片(图片的URL)
+     * @param url           图片地址
+     * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
+     */
+    public void AndroidThunkJava_WXSDK_sendReqImg(int index, String url, boolean isShareToTimeline) {
+        switch (index) {
+            case 1: {
+                //String path = url.replace("assets/","");
+                String path = url;
+                File file = new File(path);
+                if (!file.exists()) {
+                    String tip = "图片文件不存在";
+                    Toast.makeText(m_context_WeChat, tip + " path = " + path, Toast.LENGTH_LONG).show();
+                    break;
+                }
+
+                WXImageObject imgObj = new WXImageObject();
+                imgObj.setImagePath(path);
+
+                WXMediaMessage msg = new WXMediaMessage();
+                msg.mediaObject = imgObj;
+
+                Bitmap bmp = BitmapFactory.decodeFile(path);
+                Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
+                bmp.recycle();
+                msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
+
+                SendMessageToWX.Req req = new SendMessageToWX.Req();
+                req.transaction = WX_buildTransaction("img");
+                req.message = msg;
+                //要分享给好友还是分享到朋友圈
+                req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+                m_wxApi.sendReq(req);
+                break;
+            }
+            case 2: {
+
+                try {
+                    WXImageObject imgObj = new WXImageObject();
+                    imgObj.imageUrl = url;
+
+                    WXMediaMessage msg = new WXMediaMessage();
+                    msg.mediaObject = imgObj;
+
+                    Bitmap bmp = BitmapFactory.decodeStream(new URL(url).openStream());
+                    Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
+                    bmp.recycle();
+                    msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
+
+                    SendMessageToWX.Req req = new SendMessageToWX.Req();
+                    req.transaction = WX_buildTransaction("img");
+                    req.message = msg;
+                    //要分享给好友还是分享到朋友圈
+                    req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+                    m_wxApi.sendReq(req);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                break;
+            }
+            default:
+                break;
+        }
+    }
+  
+  /**
+     * 分享网址到微信
+     *
+     * @param webUrl            要分享的网址
+     * @param title             标题
+     * @param imagePath         图片地址
+     * @param description       描述
+     * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
+     */
+    public void AndroidThunkJava_WXSDK_sendReqWeb(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline) {
+
+        //File file = new File(imagePath);
+        //if (!file.exists()) {
+        //  String tip = "图片文件不存在";
+        //  Toast.makeText(m_context_WeChat, tip + " imagePath = " + imagePath, Toast.LENGTH_LONG).show();
+        //  return;
+        //}
+
+        WXWebpageObject webpage = new WXWebpageObject();
+        webpage.webpageUrl = webUrl;
+        WXMediaMessage msg = new WXMediaMessage(webpage);
+        msg.title = title;
+        msg.description = description;
+
+        Bitmap bmp = BitmapFactory.decodeResource(m_context_WeChat.getResources(), R.drawable.wx_share);  
+        //Bitmap bmp = BitmapFactory.decodeFile(imagePath);
+        Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
+        bmp.recycle();
+        msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
+
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = WX_buildTransaction("webpage");
+        req.message = msg;
+        //要分享给好友还是分享到朋友圈
+        req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+        m_wxApi.sendReq(req);
+    }
+    
+    ]]></insert>
+  </gameActivityClassAdditions>
+  
+  <!-- optional additions to GameActivity onCreate metadata reading in GameActivity.java -->
+  <gameActivityReadMetadataAdditions>
+  <insert>
+
+  </insert>
+  </gameActivityReadMetadataAdditions>
+  
+  <!-- optional additions to GameActivity onCreate in GameActivity.java -->
+  <gameActivityOnCreateAdditions>
+  <insert><![CDATA[
+    
+  m_context_WeChat = getApplicationContext();
+  
+  // 通过WXAPIFactory工厂，获取到IWXAPI的实例
+  m_wxApi = WXAPIFactory.createWXAPI(this,WECHAT_APP_ID, true);
+
+  // 将应用的APPID注册到微信
+  m_wxApi.registerApp(WECHAT_APP_ID);
+    
+  ]]></insert>
+  </gameActivityOnCreateAdditions>
+
+  <!-- optional additions to GameActivity onDestroy in GameActivity.java -->
+  <gameActivityOnDestroyAdditions>
+    <insert>
+    
+    </insert>
+  </gameActivityOnDestroyAdditions>
+  
+  
+  <!-- optional additions to GameActivity onStart in GameActivity.java -->
+  <gameActivityOnStartAdditions>
+    <insert>
+    
+    </insert>
+  </gameActivityOnStartAdditions>
+
+  <!-- optional additions to GameActivity onStop in GameActivity.java -->
+  <gameActivityOnStopAdditions>
+    <insert>
+    
+    </insert>
+  </gameActivityOnStopAdditions>
+  
+
+  <!-- optional additions to GameActivity onPause in GameActivity.java  -->
+  <gameActivityOnPauseAdditions>
+    <insert>
+    </insert>
+  </gameActivityOnPauseAdditions>
+
+
+  <!-- optional additions to GameActivity onResume in GameActivity.java -->
+  <gameActivityOnResumeAdditions>
+    <insert>
+    </insert>
+  </gameActivityOnResumeAdditions>
+
+
+  <!-- optional additions to GameActivity onActivityResult in GameActivity.java -->
+  <gameActivityOnActivityResultAdditions>
+    <insert>
+    </insert>
+    </gameActivityOnActivityResultAdditions>
+  
+
+  <!-- optional libraries to load in GameActivity.java before libUE4.so -->
+  <soLoadLibrary>
+    <!-- need this if plugin enabled and supported architecture, even if not packaged for GearVR -->
+  <!--  <if condition="bSupported">
+      <true>
+        <loadLibrary name="vrapi" failmsg="GearVR library not loaded and required!" />
+      </true>
+    </if> -->
+  </soLoadLibrary>
+</root>
