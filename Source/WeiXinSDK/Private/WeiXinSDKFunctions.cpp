@@ -8,6 +8,11 @@
 #include "Android/AndroidJNI.h"
 #include "AndroidApplication.h"
 
+bool UWeiXinSDKFunctions::isInitJavaFunc = false;
+//	
+
+
+
 #define INIT_JAVA_METHOD(name, signature) \
 if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true)) { \
 	name = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, #name, signature, false); \
@@ -26,11 +31,13 @@ DECLARE_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqWeb);
 void UWeiXinSDKFunctions::InitJavaFunctions()
 {
 	//(String text, boolean isShareToTimeline)
-	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqText, "(Ljava/lang/String;B;)V");
-	//(int index, String url, boolean isShareToTimeline)
-	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqImg, "(I;Ljava/lang/String;B;)V");
+	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqText, "(Ljava/lang/String;Z)V");
 	//(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline)
-	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqWeb, "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;B;)V");
+	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqWeb, "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V");
+	//String url, boolean isUrl, boolean isShareToTimeline
+	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqImg, "(Ljava/lang/String;ZZ)V");
+
+	isInitJavaFunc = true;
 }
 
 #undef DECLARE_JAVA_METHOD
@@ -58,6 +65,13 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareToTimeline)
 {
 #if PLATFORM_ANDROID
+
+	if (!isInitJavaFunc)
+	{
+		InitJavaFunctions();
+		isInitJavaFunc = true;
+	}
+
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
 		jstring TextArg = Env->NewStringUTF(TCHAR_TO_UTF8(*text));
@@ -75,14 +89,20 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 #endif
 }
 
-void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(int index, const FString& url, bool isShareToTimeline)
+void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& url, bool isURL, bool isShareToTimeline)
 {
 #if PLATFORM_ANDROID
+	if (!isInitJavaFunc)
+	{
+		InitJavaFunctions();
+		isInitJavaFunc = true;
+	}
+
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
 		jstring URLArg = Env->NewStringUTF(TCHAR_TO_UTF8(*url));
 
-		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqImg, (jint)index, URLArg, (jboolean)isShareToTimeline);
+		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqImg, URLArg, (jboolean)isURL, (jboolean)isShareToTimeline);
 
 		Env->DeleteLocalRef(URLArg);
 
@@ -99,6 +119,12 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(int index, const FString& url, bool
 void UWeiXinSDKFunctions::WeiXinSDK_ShareWeb(const FString& url, const FString& title, const FString& imagePath, const FString& description, bool isShareToTimeline)
 {
 #if PLATFORM_ANDROID
+	if (!isInitJavaFunc)
+	{
+		InitJavaFunctions();
+		isInitJavaFunc = true;
+	}
+
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
 		jstring URLArg = Env->NewStringUTF(TCHAR_TO_UTF8(*url));

@@ -21,6 +21,7 @@ public:
 
 #if PLATFORM_ANDROID
 	static void InitJavaFunctions();
+	static bool isInitJavaFunc;
 #endif
 	
 	/**
@@ -40,7 +41,7 @@ public:
 	* @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
 	*/
 	UFUNCTION(BlueprintCallable, meta = (Keywords = "WeiXinSDK "), Category = "WeiXinSDK|")
-	static void WeiXinSDK_ShareImg(int index, const FString& url, bool isShareToTimeline);
+	static void WeiXinSDK_ShareImg(const FString& url, bool isURL, bool isShareToTimeline);
 
 	/**
 	* 分享网址到微信

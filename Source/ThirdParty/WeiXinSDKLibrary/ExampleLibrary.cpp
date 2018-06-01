@@ -1,5 +1,7 @@
 #if defined _WIN32 || defined _WIN64
-    #include <Windows.h>
+#include "AllowWindowsPlatformTypes.h"
+#include "windows.h" // any native windows header
+#include "HideWindowsPlatformTypes.h"
 
     #define DLLEXPORT __declspec(dllexport)
 #else

@@ -94,7 +94,7 @@
   public native void nativeOnWXShareResult(String result);
   
   // 微信APPID
-  private static final String WECHAT_APP_ID = "";
+  private static final String WECHAT_APP_ID = "wxbb08167f21b361a2";
   
   private IWXAPI m_wxApi;
   
@@ -135,6 +135,9 @@
      */
    
    public void AndroidThunkJava_WXSDK_sendReqText(String text, boolean isShareToTimeline) {
+
+        Log.debug("WeChat Share Text Begin");
+
         // 初始化一个WXTextObject对象
         WXTextObject textObj = new WXTextObject();
         textObj.text = text;
@@ -152,79 +155,78 @@
         req.message = msg;
     
     //要分享给好友还是分享到朋友圈
-        req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+        req.scene = (isShareToTimeline) ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
 
         // 调用api接口发送数据到微信
         m_wxApi.sendReq(req);
+
+        Log.debug("WeChat Share Text End");
     }
   
   /**
      * 发送图片到微信
      *
-     * @param index             索引。1：表示手机本地图片；2：表示网络图片(图片的URL)
      * @param url           图片地址
+     * @param isUrl           false：表示手机本地图片；true：表示网络图片(图片的URL)
      * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
      */
-    public void AndroidThunkJava_WXSDK_sendReqImg(int index, String url, boolean isShareToTimeline) {
-        switch (index) {
-            case 1: {
-                //String path = url.replace("assets/","");
-                String path = url;
-                File file = new File(path);
-                if (!file.exists()) {
-                    String tip = "图片文件不存在";
-                    Toast.makeText(m_context_WeChat, tip + " path = " + path, Toast.LENGTH_LONG).show();
-                    break;
-                }
+    public void AndroidThunkJava_WXSDK_sendReqImg(String url, boolean isUrl, boolean isShareToTimeline) {
+        Log.debug("WeChat Share Img Begin");
 
-                WXImageObject imgObj = new WXImageObject();
-                imgObj.setImagePath(path);
+        if(isUrl)
+        {
+          //String path = url.replace("assets/","");
+          String path = url;
+          File file = new File(path);
+          if (!file.exists()) {
+              String tip = "图片文件不存在";
+              Toast.makeText(m_context_WeChat, tip + " path = " + path, Toast.LENGTH_LONG).show();
+              return;
+          }
 
-                WXMediaMessage msg = new WXMediaMessage();
-                msg.mediaObject = imgObj;
+          WXImageObject imgObj = new WXImageObject();
+          imgObj.setImagePath(path);
 
-                Bitmap bmp = BitmapFactory.decodeFile(path);
-                Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
-                bmp.recycle();
-                msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
+          WXMediaMessage msg = new WXMediaMessage();
+          msg.mediaObject = imgObj;
 
-                SendMessageToWX.Req req = new SendMessageToWX.Req();
-                req.transaction = WX_buildTransaction("img");
-                req.message = msg;
-                //要分享给好友还是分享到朋友圈
-                req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
-                m_wxApi.sendReq(req);
-                break;
-            }
-            case 2: {
+          Bitmap bmp = BitmapFactory.decodeFile(path);
+          Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
+          bmp.recycle();
+          msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
 
-                try {
-                    WXImageObject imgObj = new WXImageObject();
-                    imgObj.imageUrl = url;
-
-                    WXMediaMessage msg = new WXMediaMessage();
-                    msg.mediaObject = imgObj;
-
-                    Bitmap bmp = BitmapFactory.decodeStream(new URL(url).openStream());
-                    Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
-                    bmp.recycle();
-                    msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
-
-                    SendMessageToWX.Req req = new SendMessageToWX.Req();
-                    req.transaction = WX_buildTransaction("img");
-                    req.message = msg;
-                    //要分享给好友还是分享到朋友圈
-                    req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
-                    m_wxApi.sendReq(req);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                break;
-            }
-            default:
-                break;
+          SendMessageToWX.Req req = new SendMessageToWX.Req();
+          req.transaction = WX_buildTransaction("img");
+          req.message = msg;
+          //要分享给好友还是分享到朋友圈
+          req.scene = (isShareToTimeline) ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+          m_wxApi.sendReq(req);
         }
+        else
+        {
+          try {
+              WXImageObject imgObj = new WXImageObject();
+              imgObj.imageUrl = url;
+
+              WXMediaMessage msg = new WXMediaMessage();
+              msg.mediaObject = imgObj;
+
+              Bitmap bmp = BitmapFactory.decodeStream(new URL(url).openStream());
+              Bitmap thumbBmp = Bitmap.createScaledBitmap(bmp, THUMB_SIZE, THUMB_SIZE, true);
+              bmp.recycle();
+              msg.thumbData = WX_bmpToByteArray(thumbBmp, true);
+
+              SendMessageToWX.Req req = new SendMessageToWX.Req();
+              req.transaction = WX_buildTransaction("img");
+              req.message = msg;
+              //要分享给好友还是分享到朋友圈
+              req.scene = (isShareToTimeline) ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+              m_wxApi.sendReq(req);
+            } catch (Exception e) {
+              e.printStackTrace();
+          }
+        }
+        Log.debug("WeChat Share Img End");
     }
   
   /**
@@ -237,6 +239,8 @@
      * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
      */
     public void AndroidThunkJava_WXSDK_sendReqWeb(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline) {
+        
+        Log.debug("WeChat Share URL Begin");
 
         //File file = new File(imagePath);
         //if (!file.exists()) {
@@ -261,8 +265,10 @@
         req.transaction = WX_buildTransaction("webpage");
         req.message = msg;
         //要分享给好友还是分享到朋友圈
-        req.scene = isShareToTimeline ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
+        req.scene = (isShareToTimeline) ? SendMessageToWX.Req.WXSceneTimeline : SendMessageToWX.Req.WXSceneSession;
         m_wxApi.sendReq(req);
+
+        Log.debug("WeChat Share URL End");
     }
     
     ]]></insert>
@@ -278,6 +284,8 @@
   <!-- optional additions to GameActivity onCreate in GameActivity.java -->
   <gameActivityOnCreateAdditions>
   <insert><![CDATA[
+
+  Log.debug("WeChat Register Begin");
     
   m_context_WeChat = getApplicationContext();
   
@@ -286,6 +294,8 @@
 
   // 将应用的APPID注册到微信
   m_wxApi.registerApp(WECHAT_APP_ID);
+
+  Log.debug("WeChat Register End");
     
   ]]></insert>
   </gameActivityOnCreateAdditions>
