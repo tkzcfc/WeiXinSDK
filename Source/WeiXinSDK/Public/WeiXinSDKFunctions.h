@@ -19,10 +19,17 @@ class WEIXINSDK_API UWeiXinSDKFunctions : public UObject
 	
 public:
 
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID 
 	static void InitJavaFunctions();
-	static bool isInitJavaFunc;
 #endif
+
+	//
+	/**
+	* 微信是否安装或是否支持API
+	*
+	*/
+	UFUNCTION(BlueprintCallable, meta = (Keywords = "WeiXinSDK "), Category = "WeiXinSDK|")
+	static bool WeiXinSDK_IsWXAppInstalledAndSupported();
 	
 	/**
 	* 分享文字到微信
@@ -48,6 +55,7 @@ public:
 	*
 	* @param webUrl            要分享的网址
 	* @param title             标题
+	* @param imagePath         图片地址
 	* @param description       描述
 	* @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
 	*/

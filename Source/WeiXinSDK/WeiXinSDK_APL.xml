@@ -127,6 +127,11 @@
     return (type == null) ? String.valueOf(System.currentTimeMillis()) : type + System.currentTimeMillis();
   }
 
+  public boolean AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported() {
+        boolean sIsWXAppInstalledAndSupported = m_wxApi.isWXAppInstalled() && m_wxApi.isWXAppSupportAPI();
+        return sIsWXAppInstalledAndSupported;
+    }
+
   /**
      * 分享到微信
      *
@@ -135,6 +140,10 @@
      */
    
    public void AndroidThunkJava_WXSDK_sendReqText(String text, boolean isShareToTimeline) {
+        if(!AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported())
+        {
+          return;
+        }
 
         Log.debug("WeChat Share Text Begin");
 
@@ -171,9 +180,13 @@
      * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
      */
     public void AndroidThunkJava_WXSDK_sendReqImg(String url, boolean isUrl, boolean isShareToTimeline) {
+        if(!AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported())
+        {
+          return;
+        }
         Log.debug("WeChat Share Img Begin");
 
-        if(isUrl)
+        if(isUrl == false)
         {
           //String path = url.replace("assets/","");
           String path = url;
@@ -239,7 +252,10 @@
      * @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
      */
     public void AndroidThunkJava_WXSDK_sendReqWeb(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline) {
-        
+        if(!AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported())
+        {
+          return;
+        }
         Log.debug("WeChat Share URL Begin");
 
         //File file = new File(imagePath);

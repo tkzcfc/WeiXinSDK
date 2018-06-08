@@ -29,15 +29,15 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
         //2.resp.transaction则是在分享数据的时候手动指定的字符创,用来分辨是那次分享(参照4.中req.transaction)
         switch (resp.errCode) { //根据需要的情况进行处理
             case BaseResp.ErrCode.ERR_OK:
-                //正确返回
-                switch (resp.getType()) {
-                    case RETURN_MSG_TYPE_LOGIN:
-                        break;
-                    case RETURN_MSG_TYPE_SHARE:
-                    GameActivity.Get().nativeOnWXShareResult("1");
-                        break;
-                }
-                break;
+            //正确返回
+            switch (resp.getType()) {
+                case RETURN_MSG_TYPE_LOGIN:
+                    break;
+                case RETURN_MSG_TYPE_SHARE:
+                GameActivity.Get().nativeOnWXShareResult("1");
+                    break;
+            }
+            break;
             case BaseResp.ErrCode.ERR_USER_CANCEL:
                 //用户取消
                 GameActivity.Get().nativeOnWXShareResult("0");
@@ -58,8 +58,8 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
             default:
                 //其他不可名状的情况
                 break;
-        }
-        finish();
+            }
+            finish();
     }
 
     @Override
