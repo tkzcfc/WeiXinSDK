@@ -23,6 +23,10 @@ public:
 	static void InitJavaFunctions();
 #endif
 
+#if PLATFORM_IOS
+	static void InitIOSFunctions();
+#endif
+
 	//
 	/**
 	* 微信是否安装或是否支持API
@@ -43,12 +47,12 @@ public:
 	/**
 	* 发送图片到微信
 	*
-	* @param index         索引。1：表示手机本地图片；2：表示网络图片(图片的URL)
-	* @param url           图片地址
+	* @param imagePath           图片地址
+	* @param thumbPath           缩略图图地址
 	* @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
 	*/
 	UFUNCTION(BlueprintCallable, meta = (Keywords = "WeiXinSDK "), Category = "WeiXinSDK|")
-	static void WeiXinSDK_ShareImg(const FString& url, bool isURL, bool isShareToTimeline);
+	static void WeiXinSDK_ShareImg(const FString& imagePath, const FString& thumbPath, bool isShareToTimeline);
 
 	/**
 	* 分享网址到微信

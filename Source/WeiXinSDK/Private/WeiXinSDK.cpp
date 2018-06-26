@@ -21,8 +21,11 @@ IMPLEMENT_MODULE(FWeiXinSDKModule, WeiXinSDK)
 
 void FWeiXinSDKModule::StartupModule()
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID 
 	UWeiXinSDKFunctions::InitJavaFunctions();
+#endif
+#if PLATFORM_IOS
+	UWeiXinSDKFunctions::InitIOSFunctions();
 #endif
 }
 

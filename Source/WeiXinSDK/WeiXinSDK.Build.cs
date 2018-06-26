@@ -62,6 +62,29 @@ public class WeiXinSDK : ModuleRules
 
         if (Target.Platform == UnrealTargetPlatform.IOS)
         {
+            var LibDir = Path.Combine(ModuleDirectory, "..", "..", "lib", "iOS");
+            PrivateIncludePaths.Add(LibDir);
+
+            PublicAdditionalLibraries.Add(Path.Combine(LibDir, "libWeChatSDK.a"));
+
+            PublicAdditionalLibraries.Add("libz.dylib");
+            PublicAdditionalLibraries.Add("libsqlite3.0.dylib");
+            PublicAdditionalLibraries.Add("libc++.dylib");
+
+            PublicFrameworks.AddRange(
+                new string[]
+                {
+                        "SystemConfiguration",
+                        "CoreTelephoy",
+                        //"Security",
+                        //"MediaPlayer"
+                }
+            );
+
+            //PublicAdditionalShadowFiles.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "AppDelegate+WeChatExt.m"));
+
+            string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, BuildConfiguration.RelativeEnginePath);
+            AdditionalPropertiesForReceipt.Add(new ReceiptProperty("IOSPlugin", Path.Combine(PluginPath, "WeiXinSDK_IPL.xml")));
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
