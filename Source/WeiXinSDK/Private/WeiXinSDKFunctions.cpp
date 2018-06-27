@@ -32,8 +32,8 @@ void UWeiXinSDKFunctions::InitJavaFunctions()
 	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqText, "(Ljava/lang/String;Z)V");
 	//(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline)
 	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqWeb, "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V");
-	//(String imagePath, String thumbPath, boolean isShareToTimeline)
-	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqImg, "(Ljava/lang/String;Ljava/lang/String;Z)V");
+	//String title,String description, String imagePath, String thumbPath, boolean isShareToTimeline
+	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqImg, "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V");
 	//boolean(void)
 	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported, "()Z");
 }
@@ -69,8 +69,10 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 
 #if PLATFORM_IOS
 
+#import "IOSAppDelegate+WeChatExt.h"
 #import "WechatDelegate.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 @implementation WechatDelegate
 
 + (WechatDelegate*)getInstance
@@ -146,6 +148,26 @@ void UWeiXinSDKFunctions::InitIOSFunctions()
 	[WechatDelegate getInstance];
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+@implementation IOSAppDelegate(WeChatExt)
+
+- (BOOL)application:(UIApplication *)application openURL : (NSURL *)url sourceApplication : (NSString *)sourceApplication annotation : (id)annotation
+{
+	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+}
+
+-(BOOL)application : (UIApplication *)application handleOpenURL : (NSURL *)url
+{
+	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+}
+
+-(BOOL)application : (UIApplication *)app openURL : (NSURL *)url options : (NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options
+{
+	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+}
+
+@end
+
 #endif
 
 bool UWeiXinSDKFunctions::WeiXinSDK_IsWXAppInstalledAndSupported()
@@ -195,10 +217,10 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 
 #if PLATFORM_IOS
 
-	std::string TextArg = TCHAR_TO_UTF8(*text);
+	const char* TextArg = TCHAR_TO_UTF8(*text);
 
 	SendMessageToWXReq *req = [[SendMessageToWXReq alloc] init];
-	req.text = [NSString stringWithUTF8String : TextArg.c_str()];
+	req.text = [NSString stringWithUTF8String : TextArg];
 	req.bText = YES;
 
 	if (isShareToTimeline)
@@ -216,17 +238,19 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 #endif
 }
 
-void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& imagePath, const FString& thumbPath, bool isShareToTimeline)
+void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString& description, const FString& imagePath, const FString& thumbPath, bool isShareToTimeline)
 {
 	if (!WeiXinSDK_IsWXAppInstalledAndSupported())
 		return;
 #if PLATFORM_ANDROID
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
+		jstring TitleArg = Env->NewStringUTF(TCHAR_TO_UTF8(*title));
+		jstring DescriptionArg = Env->NewStringUTF(TCHAR_TO_UTF8(*description));
 		jstring ImagePathArg = Env->NewStringUTF(TCHAR_TO_UTF8(*imagePath));
 		jstring ThumbPathArg = Env->NewStringUTF(TCHAR_TO_UTF8(*thumbPath));
 
-		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqImg, ImagePathArg, ThumbPathArg, (jboolean)isShareToTimeline);
+		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqImg, TitleArg, DescriptionArg, ImagePathArg, ThumbPathArg, (jboolean)isShareToTimeline);
 
 		Env->DeleteLocalRef(ImagePathArg);
 		Env->DeleteLocalRef(ThumbPathArg);
@@ -241,19 +265,19 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& imagePath, const FSt
 
 #if PLATFORM_IOS
 
-	std::string ImagePathArg = TCHAR_TO_UTF8(*imagePath);
-	std::string ThumbPathArg = TCHAR_TO_UTF8(*thumbPath);
+	const char* ImagePathArg = TCHAR_TO_UTF8(*imagePath);
+	const char* ThumbPathArg = TCHAR_TO_UTF8(*thumbPath);
 
 	WXMediaMessage *message = [WXMediaMessage message];
 	
-	[message setThumbImage:[UIImage imageNamed:[NSString stringWithUTF8String: ThumbPathArg.c_str()]]];
+	[message setThumbImage:[UIImage imageNamed:[NSString stringWithUTF8String: ThumbPathArg]]];
 
 	WXImageObject *imageObj = [WXImageObject object];
 
-	NSString *filePath = [NSString stringWithUTF8String: ImagePathArg.c_str()];
+	NSString *filePath = [NSString stringWithUTF8String: ImagePathArg];
 	imageObj.imageData = [NSData dataWithContentsOfFile:filePath];
 
-	UIImage* image = [UIImage imageWithData:ext.imageData];
+	UIImage* image = [UIImage imageWithData: imageObj.imageData];
 	imageObj.imageData = UIImageJPEGRepresentation(image, 0.5);
 
 	message.mediaObject = imageObj;
@@ -308,19 +332,19 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareWeb(const FString& url, const FString& 
 #if PLATFORM_IOS
 
 
-	std::string URLArg = TCHAR_TO_UTF8(*url);
-	std::string TitleArg = TCHAR_TO_UTF8(*title);
-	std::string ImagePathArg = TCHAR_TO_UTF8(*imagePath);
-	std::string DescriptionArg = TCHAR_TO_UTF8(*description);
+	const char* URLArg = TCHAR_TO_UTF8(*url);
+	const char* TitleArg = TCHAR_TO_UTF8(*title);
+	const char* ImagePathArg = TCHAR_TO_UTF8(*imagePath);
+	const char* DescriptionArg = TCHAR_TO_UTF8(*description);
 
 	WXMediaMessage *message = [WXMediaMessage message];
-	message.title = [NSString stringWithUTF8String : TitleArg.c_str()];
-	message.description = [NSString stringWithUTF8String : DescriptionArg.c_str()];
+	message.title = [NSString stringWithUTF8String : TitleArg];
+	message.description = [NSString stringWithUTF8String : DescriptionArg];
 
-	[message setThumbImage : [UIImage imageNamed : [NSString stringWithUTF8String : ImagePathArg.c_str()]]];
+	[message setThumbImage : [UIImage imageNamed : [NSString stringWithUTF8String : ImagePathArg]]];
 
 	WXWebpageObject *webObj = [WXWebpageObject object];
-	webObj.webpageUrl = [NSString stringWithUTF8String : URLArg.c_str()];
+	webObj.webpageUrl = [NSString stringWithUTF8String : URLArg];
 
 	message.mediaObject = webObj;
 

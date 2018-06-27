@@ -65,26 +65,29 @@ public class WeiXinSDK : ModuleRules
             var LibDir = Path.Combine(ModuleDirectory, "..", "..", "lib", "iOS");
             PrivateIncludePaths.Add(LibDir);
 
+            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "iOS"));
+
             PublicAdditionalLibraries.Add(Path.Combine(LibDir, "libWeChatSDK.a"));
 
-            PublicAdditionalLibraries.Add("libz.dylib");
-            PublicAdditionalLibraries.Add("libsqlite3.0.dylib");
-            PublicAdditionalLibraries.Add("libc++.dylib");
 
             PublicFrameworks.AddRange(
                 new string[]
                 {
                         "SystemConfiguration",
-                        "CoreTelephoy",
-                        //"Security",
-                        //"MediaPlayer"
+                        "CoreTelephony",
+                        "CFNetwork",
                 }
             );
 
-            //PublicAdditionalShadowFiles.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "AppDelegate+WeChatExt.m"));
-
-            string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, BuildConfiguration.RelativeEnginePath);
-            AdditionalPropertiesForReceipt.Add(new ReceiptProperty("IOSPlugin", Path.Combine(PluginPath, "WeiXinSDK_IPL.xml")));
+            // libz.tdb
+            PublicAdditionalLibraries.Add("z");
+            // libsqlite3.0.tdb
+            PublicAdditionalLibraries.Add("sqlite3.0");
+            // libc++.tdb
+            PublicAdditionalLibraries.Add("c++");
+            
+            //string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, BuildConfiguration.RelativeEnginePath);
+            //AdditionalPropertiesForReceipt.Add(new ReceiptProperty("IOSPlugin", Path.Combine(PluginPath, "WeiXinSDK_IPL.xml")));
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {

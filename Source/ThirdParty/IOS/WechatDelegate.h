@@ -1,7 +1,9 @@
 
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import "WXApi.h"
 
-@interface WechatDelegate()<WXApiDelegate>
+@interface WechatDelegate :NSObject<WXApiDelegate>
 
 +(WechatDelegate*) getInstance;
 

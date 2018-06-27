@@ -46,13 +46,14 @@ public:
 
 	/**
 	* 发送图片到微信
-	*
+	* @param title               标题
+	* @param description         描述
 	* @param imagePath           图片地址
 	* @param thumbPath           缩略图图地址
 	* @param isShareToTimeline false表示分享给朋友，true表示分享到朋友圈
 	*/
 	UFUNCTION(BlueprintCallable, meta = (Keywords = "WeiXinSDK "), Category = "WeiXinSDK|")
-	static void WeiXinSDK_ShareImg(const FString& imagePath, const FString& thumbPath, bool isShareToTimeline);
+	static void WeiXinSDK_ShareImg(const FString& title, const FString& description, const FString& imagePath, const FString& thumbPath, bool isShareToTimeline);
 
 	/**
 	* 分享网址到微信
