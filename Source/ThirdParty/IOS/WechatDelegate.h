@@ -5,8 +5,6 @@
 
 @interface WechatDelegate :NSObject<WXApiDelegate>
 
-+(WechatDelegate*) getInstance;
-
 /*! @brief 收到一个来自微信的请求，第三方应用程序处理完后调用sendResp向微信发送结果
  *
  * 收到一个来自微信的请求，异步处理完成后必须调用sendResp发送处理结果给微信。

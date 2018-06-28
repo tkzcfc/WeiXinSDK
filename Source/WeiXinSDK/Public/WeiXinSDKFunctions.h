@@ -20,13 +20,10 @@ class WEIXINSDK_API UWeiXinSDKFunctions : public UObject
 public:
 
 #if PLATFORM_ANDROID 
-	static void InitJavaFunctions();
+	static void InitAndroidFunctions();
 #endif
 
-#if PLATFORM_IOS
-	static void InitIOSFunctions();
-#endif
-
+	static bool isRegister();
 	//
 	/**
 	* 微信是否安装或是否支持API

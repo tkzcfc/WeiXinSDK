@@ -73,9 +73,9 @@ public class WeiXinSDK : ModuleRules
             PublicFrameworks.AddRange(
                 new string[]
                 {
-                        "SystemConfiguration",
-                        "CoreTelephony",
-                        "CFNetwork",
+                    "SystemConfiguration",
+                    "CoreTelephony",
+                    "CFNetwork"
                 }
             );
 

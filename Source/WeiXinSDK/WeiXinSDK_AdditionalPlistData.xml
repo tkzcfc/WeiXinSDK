@@ -8,6 +8,7 @@
 <key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>weixin</string>
+		<string>wechat</string>
 	</array>
 <!--设置URL-->
 <key>CFBundleURLTypes</key>

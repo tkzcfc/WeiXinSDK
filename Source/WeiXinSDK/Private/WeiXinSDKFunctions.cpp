@@ -26,7 +26,7 @@ DECLARE_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqText);
 DECLARE_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqImg);
 DECLARE_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqWeb);
 
-void UWeiXinSDKFunctions::InitJavaFunctions()
+void UWeiXinSDKFunctions::InitAndroidFunctions()
 {
 	//(String text, boolean isShareToTimeline)
 	INIT_JAVA_METHOD(AndroidThunkJava_WXSDK_sendReqText, "(Ljava/lang/String;Z)V");
@@ -68,21 +68,24 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 
 
 #if PLATFORM_IOS
-
 #import "IOSAppDelegate+WeChatExt.h"
 #import "WechatDelegate.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static bool IsIOS_WX_Register = false;
+
+static WechatDelegate* Static_WechatDelegate_Instance = NULL;
+
 @implementation WechatDelegate
 
-+ (WechatDelegate*)getInstance
+
++ (void)load
 {
-	static WechatDelegate* Static_WechatDelegate_Instance = NULL;
-	if (Static_WechatDelegate_Instance == NULL)
+	if (!Static_WechatDelegate_Instance)
 	{
 		Static_WechatDelegate_Instance = [[WechatDelegate alloc] init];
 	}
-	return Static_WechatDelegate_Instance;
 }
 
 -(id)init
@@ -102,12 +105,14 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 
 -(void)applicationDidFinishLaunching:(NSNotification *)n
 {
-	NSDictionary *dLaunchOptionsUrl = n.userInfo[@"UIApplicationLaunchOptionsURLKey"];
+	[WXApi registerApp : @"wxbb08167f21b361a2"];
+	IsIOS_WX_Register = true;
+	//NSDictionary *dLaunchOptionsUrl = n.userInfo[@"UIApplicationLaunchOptionsURLKey"];
 
-	if (!dLaunchOptionsUrl)
-	{
-		[WXApi registerApp : @"wxbb08167f21b361a2"];
-	}
+	//if (!dLaunchOptionsUrl)
+	//{
+	//	[WXApi registerApp : @"wxbb08167f21b361a2"];
+	//}
 }
 
 /*! @brief 收到一个来自微信的请求，第三方应用程序处理完后调用sendResp向微信发送结果
@@ -130,45 +135,45 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 -(void)onResp:(BaseResp*)resp
 {
 	SendMessageToWXResp *sendResp = (SendMessageToWXResp *)resp;
-	
+
 	NSString *CodeStr = [NSString stringWithFormat : @"%d",sendResp.errCode];
 	FString Result = FString(UTF8_TO_TCHAR([CodeStr UTF8String]));
 
-	AsyncTask(ENamedThreads::GameThread, [=]()
-	{
-		UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result);
-	});
+	UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result);
 }
 
 @end
 
-
-void UWeiXinSDKFunctions::InitIOSFunctions()
-{
-	[WechatDelegate getInstance];
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 @implementation IOSAppDelegate(WeChatExt)
 
 - (BOOL)application:(UIApplication *)application openURL : (NSURL *)url sourceApplication : (NSString *)sourceApplication annotation : (id)annotation
 {
-	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
 }
 
 -(BOOL)application : (UIApplication *)application handleOpenURL : (NSURL *)url
 {
-	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
 }
 
 -(BOOL)application : (UIApplication *)app openURL : (NSURL *)url options : (NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options
 {
-	return[WXApi handleOpenURL : url delegate : [WechatDelegate getInstance]];
+	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
 }
 
 @end
 
 #endif
+
+bool UWeiXinSDKFunctions::isRegister()
+{
+#if PLATFORM_IOS
+	return IsIOS_WX_Register;
+#endif
+	return true;
+}
 
 bool UWeiXinSDKFunctions::WeiXinSDK_IsWXAppInstalledAndSupported()
 {
@@ -216,11 +221,8 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 #endif
 
 #if PLATFORM_IOS
-
-	const char* TextArg = TCHAR_TO_UTF8(*text);
-
 	SendMessageToWXReq *req = [[SendMessageToWXReq alloc] init];
-	req.text = [NSString stringWithUTF8String : TextArg];
+	req.text = text.GetNSString();
 	req.bText = YES;
 
 	if (isShareToTimeline)
@@ -264,17 +266,13 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString
 #endif
 
 #if PLATFORM_IOS
-
-	const char* ImagePathArg = TCHAR_TO_UTF8(*imagePath);
-	const char* ThumbPathArg = TCHAR_TO_UTF8(*thumbPath);
-
 	WXMediaMessage *message = [WXMediaMessage message];
 	
-	[message setThumbImage:[UIImage imageNamed:[NSString stringWithUTF8String: ThumbPathArg]]];
+	[message setThumbImage:[UIImage imageNamed:thumbPath.GetNSString()]];
 
 	WXImageObject *imageObj = [WXImageObject object];
 
-	NSString *filePath = [NSString stringWithUTF8String: ImagePathArg];
+	NSString *filePath = imagePath.GetNSString();
 	imageObj.imageData = [NSData dataWithContentsOfFile:filePath];
 
 	UIImage* image = [UIImage imageWithData: imageObj.imageData];
@@ -330,21 +328,14 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareWeb(const FString& url, const FString& 
 #endif
 
 #if PLATFORM_IOS
-
-
-	const char* URLArg = TCHAR_TO_UTF8(*url);
-	const char* TitleArg = TCHAR_TO_UTF8(*title);
-	const char* ImagePathArg = TCHAR_TO_UTF8(*imagePath);
-	const char* DescriptionArg = TCHAR_TO_UTF8(*description);
-
 	WXMediaMessage *message = [WXMediaMessage message];
-	message.title = [NSString stringWithUTF8String : TitleArg];
-	message.description = [NSString stringWithUTF8String : DescriptionArg];
+	message.title = title.GetNSString();
+	message.description = description.GetNSString();
 
-	[message setThumbImage : [UIImage imageNamed : [NSString stringWithUTF8String : ImagePathArg]]];
+	[message setThumbImage : [UIImage imageNamed : imagePath.GetNSString()]];
 
 	WXWebpageObject *webObj = [WXWebpageObject object];
-	webObj.webpageUrl = [NSString stringWithUTF8String : URLArg];
+	webObj.webpageUrl = url.GetNSString();
 
 	message.mediaObject = webObj;
 
