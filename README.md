@@ -16,6 +16,7 @@ ue4 wechat
 三、编辑器设置
 [IOS] 打开编辑器 [编辑]->[项目设置]，将修改后Source/WeiXinSDK/WeiXinSDK_AdditionalPlistData.xml文件中的内容拷贝到[平台]->[IOS]->[Extra Plist Data]->[Additional Plist Data]中
 
+四、[Android] 将Source/WeiXinSDK/WeiXinSDK_APL.xml中的包名com.ChengduWonderVision.BlockMaster替换成自己的包名
 
 图片分享未测试
 Android分享返回成功（已测试）
