@@ -1,6 +1,8 @@
 # WeiXinSDK
 ue4 wechat
 
+引擎版本:4.17
+
 使用方法
 一、将该插件拷贝至工程目录下的Plugins文件夹中
 
