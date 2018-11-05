@@ -254,6 +254,8 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString
 
 		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqImg, TitleArg, DescriptionArg, ImagePathArg, ThumbPathArg, (jboolean)isShareToTimeline);
 
+		Env->DeleteLocalRef(TitleArg);
+		Env->DeleteLocalRef(DescriptionArg);
 		Env->DeleteLocalRef(ImagePathArg);
 		Env->DeleteLocalRef(ThumbPathArg);
 
