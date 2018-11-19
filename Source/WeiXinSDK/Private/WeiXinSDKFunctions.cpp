@@ -41,7 +41,7 @@ void UWeiXinSDKFunctions::InitAndroidFunctions()
 #undef DECLARE_JAVA_METHOD
 #undef INIT_JAVA_METHOD
 
-extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv* jenv, jobject thiz, jstring result)
+extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv* jenv, jobject thiz, jstring result, jint code)
 {
 	//UE_LOG(LogAndroid, Warning, TEXT("Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult 1\n"));
 	FString Result;
@@ -50,17 +50,10 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 	Result = FString(UTF8_TO_TCHAR(charsResult));
 	jenv->ReleaseStringUTFChars(result, charsResult);
 
-
-	//FGraphEventRef EnterBackgroundTask = FFunctionGraphTask::CreateAndDispatchWhenReady([=]()
-	//{
-	//	//UE_LOG(LogAndroid, Warning, TEXT("Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult 2\n"));
-	//	UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result);
-	//}, TStatId(), NULL, ENamedThreads::GameThread);
-
 	AsyncTask(ENamedThreads::GameThread, [=]()
 	{
 		//UE_LOG(LogAndroid, Warning, TEXT("Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult 2\n"));
-		UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result);
+		UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result, (int32)code);
 	});
 }
 
@@ -68,17 +61,20 @@ extern "C" void Java_com_epicgames_ue4_GameActivity_nativeOnWXShareResult(JNIEnv
 
 
 #if PLATFORM_IOS
-#import "IOSAppDelegate+WeChatExt.h"
 #import "WechatDelegate.h"
+#import "IOS/IOSAppDelegate.h"
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool IsIOS_WX_Register = false;
 
+static bool IsIOS_WX_RegisterOpenURLCall = false;
+
 static WechatDelegate* Static_WechatDelegate_Instance = NULL;
 
-@implementation WechatDelegate
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+@implementation WechatDelegate
 
 + (void)load
 {
@@ -107,12 +103,6 @@ static WechatDelegate* Static_WechatDelegate_Instance = NULL;
 {
 	[WXApi registerApp : @"wxbb08167f21b361a2"];
 	IsIOS_WX_Register = true;
-	//NSDictionary *dLaunchOptionsUrl = n.userInfo[@"UIApplicationLaunchOptionsURLKey"];
-
-	//if (!dLaunchOptionsUrl)
-	//{
-	//	[WXApi registerApp : @"wxbb08167f21b361a2"];
-	//}
 }
 
 /*! @brief 收到一个来自微信的请求，第三方应用程序处理完后调用sendResp向微信发送结果
@@ -123,7 +113,6 @@ static WechatDelegate* Static_WechatDelegate_Instance = NULL;
 */
 -(void)onReq:(BaseReq*)req
 {}
-
 
 
 /*! @brief 发送一个sendReq后，收到微信的回应
@@ -139,31 +128,19 @@ static WechatDelegate* Static_WechatDelegate_Instance = NULL;
 	NSString *CodeStr = [NSString stringWithFormat : @"%d",sendResp.errCode];
 	FString Result = FString(UTF8_TO_TCHAR([CodeStr UTF8String]));
 
-	UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result);
+	
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
+		UWeiXinSDKComponent::onWeiXinShareResultDelegate.Broadcast(Result, 0);
+	});
 }
 
 @end
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-@implementation IOSAppDelegate(WeChatExt)
-
-- (BOOL)application:(UIApplication *)application openURL : (NSURL *)url sourceApplication : (NSString *)sourceApplication annotation : (id)annotation
+static void onWeiXinOpenURL(UIApplication*, NSURL* url, NSString* , id)
 {
-	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
+	[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
 }
-
--(BOOL)application : (UIApplication *)application handleOpenURL : (NSURL *)url
-{
-	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
-}
-
--(BOOL)application : (UIApplication *)app openURL : (NSURL *)url options : (NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options
-{
-	return[WXApi handleOpenURL : url delegate : Static_WechatDelegate_Instance];
-}
-
-@end
 
 #endif
 
@@ -180,6 +157,12 @@ bool UWeiXinSDKFunctions::WeiXinSDK_IsWXAppInstalledAndSupported()
 #if PLATFORM_ANDROID
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
+		if (AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported == 0)
+		{
+			UE_LOG(LogAndroid, Warning, TEXT("I can't found the java method AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported()\n"));
+			return false;
+		}
+
 		bool ret = FJavaWrapper::CallBooleanMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported);
 
 		UE_LOG(LogAndroid, Warning, TEXT("I found the java method AndroidThunkJava_WXSDK_isWXAppInstalledAndSupported\n"));
@@ -193,7 +176,14 @@ bool UWeiXinSDKFunctions::WeiXinSDK_IsWXAppInstalledAndSupported()
 #endif
 
 #if PLATFORM_IOS
-	return [WXApi isWXAppInstalled] && [WXApi isWXAppSupportApi];
+
+	if (IsIOS_WX_RegisterOpenURLCall == false)
+	{
+		FIOSCoreDelegates::OnOpenURL.AddStatic(onWeiXinOpenURL);
+		IsIOS_WX_RegisterOpenURLCall = true;
+	}
+
+	return[WXApi isWXAppInstalled] && [WXApi isWXAppSupportApi];
 #endif
 	return false;
 }
@@ -206,6 +196,12 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareText(const FString& text, bool isShareT
 #if PLATFORM_ANDROID
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
+		if (AndroidThunkJava_WXSDK_sendReqText == 0)
+		{
+			UE_LOG(LogAndroid, Warning, TEXT("I can't found the java method AndroidThunkJava_WXSDK_sendReqText()\n"));
+			return;
+		}
+
 		jstring TextArg = Env->NewStringUTF(TCHAR_TO_UTF8(*text));
 
 		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, AndroidThunkJava_WXSDK_sendReqText, TextArg, (jboolean)isShareToTimeline);
@@ -247,6 +243,12 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString
 #if PLATFORM_ANDROID
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
+		if (AndroidThunkJava_WXSDK_sendReqImg == 0)
+		{
+			UE_LOG(LogAndroid, Warning, TEXT("I can't found the java method AndroidThunkJava_WXSDK_sendReqImg()\n"));
+			return;
+		}
+
 		jstring TitleArg = Env->NewStringUTF(TCHAR_TO_UTF8(*title));
 		jstring DescriptionArg = Env->NewStringUTF(TCHAR_TO_UTF8(*description));
 		jstring ImagePathArg = Env->NewStringUTF(TCHAR_TO_UTF8(*imagePath));
@@ -269,21 +271,21 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString
 
 #if PLATFORM_IOS
 	WXMediaMessage *message = [WXMediaMessage message];
-	
-	[message setThumbImage:[UIImage imageNamed:thumbPath.GetNSString()]];
+
+	[message setThumbImage : [UIImage imageNamed : thumbPath.GetNSString()]];
 
 	WXImageObject *imageObj = [WXImageObject object];
 
 	NSString *filePath = imagePath.GetNSString();
-	imageObj.imageData = [NSData dataWithContentsOfFile:filePath];
+	imageObj.imageData = [NSData dataWithContentsOfFile : filePath];
 
-	UIImage* image = [UIImage imageWithData: imageObj.imageData];
+	UIImage* image = [UIImage imageWithData : imageObj.imageData];
 	imageObj.imageData = UIImageJPEGRepresentation(image, 0.5);
 
 	message.mediaObject = imageObj;
-	
+
 	SendMessageToWXReq* req = [[SendMessageToWXReq alloc] init];
-	req.bText   = NO;
+	req.bText = NO;
 	req.message = message;
 
 	if (isShareToTimeline)
@@ -301,7 +303,6 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareImg(const FString& title, const FString
 #endif
 }
 
-//(String webUrl, String title, String imagePath, String description, boolean isShareToTimeline)
 void UWeiXinSDKFunctions::WeiXinSDK_ShareWeb(const FString& url, const FString& title, const FString& imagePath, const FString& description, bool isShareToTimeline)
 {
 	if (!WeiXinSDK_IsWXAppInstalledAndSupported())
@@ -309,6 +310,12 @@ void UWeiXinSDKFunctions::WeiXinSDK_ShareWeb(const FString& url, const FString& 
 #if PLATFORM_ANDROID
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
 	{
+		if (AndroidThunkJava_WXSDK_sendReqWeb == 0)
+		{
+			UE_LOG(LogAndroid, Warning, TEXT("I can't found the java method AndroidThunkJava_WXSDK_sendReqWeb()\n"));
+			return;
+		}
+
 		jstring URLArg = Env->NewStringUTF(TCHAR_TO_UTF8(*url));
 		jstring TitleArg = Env->NewStringUTF(TCHAR_TO_UTF8(*title));
 		jstring ImagePathArg = Env->NewStringUTF(TCHAR_TO_UTF8(*imagePath));

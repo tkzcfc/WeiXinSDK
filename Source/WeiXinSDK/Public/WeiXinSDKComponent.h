@@ -15,11 +15,11 @@ class WEIXINSDK_API UWeiXinSDKComponent : public UActorComponent
 
 public:
 
-	DECLARE_MULTICAST_DELEGATE_OneParam(FWeiXinSDKonWeiXinShareResultDelegate, FString);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FWeiXinSDKonWeiXinShareResultDelegate, FString, int32);
 
 	static FWeiXinSDKonWeiXinShareResultDelegate onWeiXinShareResultDelegate;
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeiXinSDKonWeiXinShareResultDynDelegate, FString, Error);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FWeiXinSDKonWeiXinShareResultDynDelegate, FString, Result, int32, ErrorCode);
 
 	UPROPERTY(BlueprintAssignable)
 	FWeiXinSDKonWeiXinShareResultDynDelegate onWeiXinShareResult;
@@ -30,6 +30,6 @@ public:
 
 private:
 	UFUNCTION()
-	void onWeiXinShareResult_Handler(FString Error) { onWeiXinShareResult.Broadcast(Error); }
-	
+	void onWeiXinShareResult_Handler(FString Result, int32 ErrorCode) { onWeiXinShareResult.Broadcast(Result, ErrorCode); }
+
 };

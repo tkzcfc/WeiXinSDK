@@ -4,47 +4,43 @@
   <!-- init section is always evaluated once per architecture -->
   <trace enable="true"/>
   <init>
-    <log text="WeiXinSDK APL init"/>    
+    <log text="WeiXinSDK APL init"/>
   </init>
 
   <androidManifestUpdates>
     <addElements tag="application">
-    <activity android:name="com.ChengduWonderVision.BlockMaster.wxapi.WXEntryActivity"
-    android:launchMode="singleTop"
-    android:exported="true"/> 
+      <activity android:name="com.ChengduWonderVision.BlockMaster.wxapi.WXEntryActivity"
+      android:launchMode="singleTop"
+      android:exported="true"/>
     </addElements>
 
-  <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
-  <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
   </androidManifestUpdates>
 
   <!-- optional additions to proguard -->
   <proguardAdditions>
     <insert>
-  <!-- -keepattributes Signature -->
-  <!-- -dontskipnonpubliclibraryclassmembers -->
-  -libraryjars libs/libammsdk.jar
+      -keep class com.tencent.mm.opensdk.** {
+      *;
+      }
 
-  <!-- -keep class com.tencent.mm.opensdk.** {
-    *;
-  }
+      -keep class com.tencent.wxop.** {
+      *;
+      }
 
-  -keep class com.tencent.wxop.** {
-    *;
-  }
-
-  -keep class com.tencent.mm.sdk.** {
-    *;
-  } -->
-  </insert>
+      -keep class com.tencent.mm.sdk.** {
+      *;
+      }
+    </insert>
   </proguardAdditions>
 
   <resourceCopies>
@@ -54,44 +50,44 @@
     <copyFile src="$S(PluginDir)/../../Source/ThirdParty/Java/wx_share.png" dst="$S(BuildDir)/res/drawable/wx_share.png" />
   </resourceCopies>
 
-  
+
   <!-- optional additions to the GameActivity imports in GameActivity.java -->
   <gameActivityImportAdditions>
-  <insert>
-  
-  // WeiXin
-  import com.tencent.mm.sdk.openapi.IWXAPI;
-  import com.tencent.mm.sdk.openapi.WXAPIFactory;
-  import com.tencent.mm.sdk.openapi.IWXAPIEventHandler;
-  import com.tencent.mm.sdk.openapi.BaseReq;  
-  import com.tencent.mm.sdk.openapi.BaseResp;
-  import com.tencent.mm.sdk.openapi.GetMessageFromWX;
-  import com.tencent.mm.sdk.openapi.WXAppExtendObject;
-  import com.tencent.mm.sdk.openapi.WXImageObject;
-  import com.tencent.mm.sdk.openapi.WXMediaMessage;
-  import com.tencent.mm.sdk.openapi.WXMusicObject;
-  import com.tencent.mm.sdk.openapi.WXTextObject;
-  import com.tencent.mm.sdk.openapi.WXVideoObject;
-  import com.tencent.mm.sdk.openapi.WXWebpageObject;
-  import com.tencent.mm.sdk.openapi.SendMessageToWX;
+    <insert>
 
-  import android.graphics.Bitmap;
-  import android.graphics.BitmapFactory;
-  import android.graphics.Bitmap.CompressFormat; 
-  import java.io.ByteArrayOutputStream;
-  import android.widget.Toast;
+      // WeiXin
+      import com.tencent.mm.sdk.openapi.IWXAPI;
+      import com.tencent.mm.sdk.openapi.WXAPIFactory;
+      import com.tencent.mm.sdk.openapi.IWXAPIEventHandler;
+      import com.tencent.mm.sdk.openapi.BaseReq;
+      import com.tencent.mm.sdk.openapi.BaseResp;
+      import com.tencent.mm.sdk.openapi.GetMessageFromWX;
+      import com.tencent.mm.sdk.openapi.WXAppExtendObject;
+      import com.tencent.mm.sdk.openapi.WXImageObject;
+      import com.tencent.mm.sdk.openapi.WXMediaMessage;
+      import com.tencent.mm.sdk.openapi.WXMusicObject;
+      import com.tencent.mm.sdk.openapi.WXTextObject;
+      import com.tencent.mm.sdk.openapi.WXVideoObject;
+      import com.tencent.mm.sdk.openapi.WXWebpageObject;
+      import com.tencent.mm.sdk.openapi.SendMessageToWX;
 
-  import com.ChengduWonderVision.BlockMaster.R;
-  </insert>
+      import android.graphics.Bitmap;
+      import android.graphics.BitmapFactory;
+      import android.graphics.Bitmap.CompressFormat;
+      import java.io.ByteArrayOutputStream;
+      import android.widget.Toast;
+
+      import com.ChengduWonderVision.BlockMaster.R;
+    </insert>
   </gameActivityImportAdditions>
-  
+
 
   <!-- optional additions to the GameActivity class in GameActivity.java -->
   <gameActivityClassAdditions>
-  <insert>
-    <![CDATA[
+    <insert>
+      <![CDATA[
 
-  public native void nativeOnWXShareResult(String result);
+  public native void nativeOnWXShareResult(String result, int code);
   
   // 微信APPID
   private static final String WECHAT_APP_ID = "wxbb08167f21b361a2";
@@ -257,19 +253,21 @@
         Log.debug("WeChat Share URL End");
     }
     
-    ]]></insert>
+    ]]>
+    </insert>
   </gameActivityClassAdditions>
-  
+
   <!-- optional additions to GameActivity onCreate metadata reading in GameActivity.java -->
   <gameActivityReadMetadataAdditions>
-  <insert>
+    <insert>
 
-  </insert>
+    </insert>
   </gameActivityReadMetadataAdditions>
-  
+
   <!-- optional additions to GameActivity onCreate in GameActivity.java -->
   <gameActivityOnCreateAdditions>
-  <insert><![CDATA[
+    <insert>
+      <![CDATA[
 
   Log.debug("WeChat Register Begin");
     
@@ -283,31 +281,32 @@
 
   Log.debug("WeChat Register End");
     
-  ]]></insert>
+  ]]>
+    </insert>
   </gameActivityOnCreateAdditions>
 
   <!-- optional additions to GameActivity onDestroy in GameActivity.java -->
   <gameActivityOnDestroyAdditions>
     <insert>
-    
+
     </insert>
   </gameActivityOnDestroyAdditions>
-  
-  
+
+
   <!-- optional additions to GameActivity onStart in GameActivity.java -->
   <gameActivityOnStartAdditions>
     <insert>
-    
+
     </insert>
   </gameActivityOnStartAdditions>
 
   <!-- optional additions to GameActivity onStop in GameActivity.java -->
   <gameActivityOnStopAdditions>
     <insert>
-    
+
     </insert>
   </gameActivityOnStopAdditions>
-  
+
 
   <!-- optional additions to GameActivity onPause in GameActivity.java  -->
   <gameActivityOnPauseAdditions>
@@ -327,13 +326,13 @@
   <gameActivityOnActivityResultAdditions>
     <insert>
     </insert>
-    </gameActivityOnActivityResultAdditions>
-  
+  </gameActivityOnActivityResultAdditions>
+
 
   <!-- optional libraries to load in GameActivity.java before libUE4.so -->
   <soLoadLibrary>
     <!-- need this if plugin enabled and supported architecture, even if not packaged for GearVR -->
-  <!--  <if condition="bSupported">
+    <!--  <if condition="bSupported">
       <true>
         <loadLibrary name="vrapi" failmsg="GearVR library not loaded and required!" />
       </true>
