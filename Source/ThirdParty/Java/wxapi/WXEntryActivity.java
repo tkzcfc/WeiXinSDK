@@ -34,20 +34,20 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                 case RETURN_MSG_TYPE_LOGIN:
                     break;
                 case RETURN_MSG_TYPE_SHARE:
-                GameActivity.Get().nativeOnWXShareResult("1");
+                GameActivity.Get().nativeOnWXShareResult("1", resp.errCode);
                     break;
             }
             break;
             case BaseResp.ErrCode.ERR_USER_CANCEL:
                 //用户取消
-                GameActivity.Get().nativeOnWXShareResult("0");
+                GameActivity.Get().nativeOnWXShareResult("0", resp.errCode);
                 break;
             case BaseResp.ErrCode.ERR_AUTH_DENIED:
                 //认证被否决
                 break;
             case BaseResp.ErrCode.ERR_SENT_FAILED:
                 //发送失败
-                GameActivity.Get().nativeOnWXShareResult("0");
+                GameActivity.Get().nativeOnWXShareResult("0", resp.errCode);
                 break;    
             case BaseResp.ErrCode.ERR_UNSUPPORT:
                 //不支持错误
